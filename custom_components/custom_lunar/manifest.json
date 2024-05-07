@@ -1,7 +1,7 @@
 {
   "domain": "lunar_calendar",
   "name": "农历日历",
-  "config_flow": false,
+  "config_flow": true,
   "documentation": "https://github.com/yourusername/lunar-calendar-component/blob/master/README.md",
   "issue_tracker": "https://github.com/yourusername/lunar-calendar-component/issues",
   "version": "1.0.0",
