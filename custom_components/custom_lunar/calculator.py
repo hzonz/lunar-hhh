@@ -1,6 +1,6 @@
 from datetime import datetime
-from .Lunar import Lunar  # 引入自定义的农历计算库
-from .Holiday import HolidayUtil  # 引入自定义的节日查询库
+from .lunar_python import Lunar  # 引入自定义的农历计算库
+from .lunar_python import Holiday  # 引入自定义的节日查询库
 
 class LunarCalculator:
     def __init__(self):
@@ -52,11 +52,19 @@ class LunarCalculator:
         xiong_shen = lunar_date.getDayXiongSha()
         yue_xiang = lunar_date.getYueXiang()
         
+        """
         # 使用HolidayUtil库获取节日信息
         year = now.year
         month = now.month
         day = now.day
-        get_holiday = HolidayUtil.getHoliday(year, month, day)
+        get_holiday = Holiday.getDay(year, month, day)
+        """
+        
+        # 计算时辰
+        hour = now.hour
+        minute = now.minute
+        time_index = (hour + 1 + (minute >= 30)) // 2 % 12
+        shi_chen = ['子时', '丑时', '寅时', '卯时', '辰时', '巳时', '午时', '未时', '申时', '酉时', '戌时', '亥时'][time_index]
         
         # 组合输出信息
         lunar_data = {
@@ -85,7 +93,8 @@ class LunarCalculator:
             "JiShen": "、".join(ji_shen) if isinstance(ji_shen, list) else ji_shen,
             "XiongShen": "、".join(xiong_shen) if isinstance(xiong_shen, list) else xiong_shen,
             "YueXiang": f"{yue_xiang}月",
-            "JiaQi": get_holiday._p.name if get_holiday else "工作日",
+            #"JiaQi": get_holiday._p.name if get_holiday else "工作日",
+            "ShiChen": shi_chen,
         }
         
         return lunar_data
