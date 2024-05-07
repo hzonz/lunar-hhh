@@ -68,3 +68,9 @@ class CustomLunarSensor(SensorEntity):
     def device_info(self):
         """Return device information about this entity."""
         return DeviceInfo(identifiers={(DOMAIN, self.unique_id)}, name=self.name)
+
+
+    async def async_manual_update(self):
+    """Perform a manual update of the sensor's data."""
+    self.update_lunar_data()
+    self.async_write_ha_state()  # Notify Home Assistant of the state change
