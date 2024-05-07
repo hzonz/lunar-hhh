@@ -68,7 +68,7 @@ class LunarSensor(SensorEntity, RestoreEntity):
             "JiShen": self._lunar_data["JiShen"],
             "XiongShen": self._lunar_data["XiongShen"],
             "YueXiang": self._lunar_data["YueXiang"],
-            "JiaQi": self._lunar_data["JiaQi"],
+          # "JiaQi": self._lunar_data["JiaQi"],
             "ShiChen": self._lunar_data.get("ShiChen", "未知"),
         }
 
