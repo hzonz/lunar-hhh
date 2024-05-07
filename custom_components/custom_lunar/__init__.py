@@ -1,73 +1,83 @@
-# custom_components/custom_lunar/__init__.py
+"""The Lunar Calendar integration."""
+from __future__ import annotations
 
-import asyncio
-from datetime import timedelta
+import logging
+
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Config, HomeAssistant
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.event import async_track_time_interval
-from .const import DOMAIN, PLATFORMS, DEFAULT_UPDATE_INTERVAL
-from .sensor import CustomLunarSensor
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.typing import ConfigType
 
-# This function is called when Home Assistant starts
-async def async_setup(hass: HomeAssistant, config: Config):
-    """Set up this integration using YAML."""
+from .const import (
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    PLATFORMS,
+    SERVICE_REFRESH,
+    SERVICE_SCHEMA_REFRESH,
+)
+from .sensor import LunarSensor
+
+_LOGGER = logging.getLogger(__name__)
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Lunar Calendar from a config entry."""
     hass.data.setdefault(DOMAIN, {})
-    return True
-
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up this integration using UI."""
-    await async_setup_platforms(hass, entry)
-    return True
-
-async def async_setup_platforms(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up the sensor platform."""
-    await asyncio.gather(
-        hass.config_entries.async_forward_entry_setup(entry, "sensor"),
+    
+    # Load configuration options
+    scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    
+    # Setup sensor platform
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, Platform.SENSOR)
     )
+    
+    # Register service to refresh lunar data
+    hass.services.async_register(
+        DOMAIN, SERVICE_REFRESH, async_refresh_lunar_data, schema=SERVICE_SCHEMA_REFRESH
+    )
+    
+    # Store options in hass.data for future reference or use
+    hass.data[DOMAIN][entry.entry_id] = {
+        "scan_interval": scan_interval,
+    }
 
-async def async_migrate_entry(hass, config_entry):
-    """Migrate old entry."""
-    # Implement migration logic if needed (e.g., when updating from an older version)
     return True
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Handle removal of an entry."""
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
 
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Reload the config entry."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
-
-def update_lunar_sensors(hass, now):
-    """Function to update lunar sensors."""
-    entities = hass.data[DOMAIN].get("entities", [])
-    for entity in entities:
-        hass.async_create_task(entity.async_manual_update())
-
-async def async_schedule_updates(hass, entry):
-    """Schedule periodic updates."""
-    interval = timedelta(seconds=entry.options.get("update_interval", DEFAULT_UPDATE_INTERVAL))
-    update_listener = async_track_time_interval(hass, lambda now: update_lunar_sensors(hass, now), interval)
-    hass.data[DOMAIN][entry.entry_id]["update_listener"] = update_listener
-
-async def async_remove_updates(hass, entry):
-    """Remove scheduled updates."""
-    update_listener = hass.data[DOMAIN][entry.entry_id]["update_listener"]
-    update_listener()
-
-async def async_update_options(hass: HomeAssistant, entry: ConfigEntry):
-    """Update options."""
-    await async_remove_updates(hass, entry)
-    await async_schedule_updates(hass, entry)
-
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up the Custom Lunar component from a config entry."""
-    await async_schedule_updates(hass, entry)
-    hass.async_create_task(async_setup_platforms(hass, entry))
-    entry.async_on_unload(entry.add_update_listener(async_update_options))
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Migrate old entry."""
+    _LOGGER.debug("Migrating from version %s", config_entry.version)
+    # Implement migration logic here if needed
+    config_entry.version = LATEST_VERSION  # Replace with actual latest version constant
+    hass.config_entries.async_update_entry(config_entry)
     return True
+
+async def async_refresh_lunar_data(hass: HomeAssistant, service_call: ServiceCall) -> None:
+    """Handle the refresh lunar data service call."""
+    # Here you would implement logic to refresh all or specific lunar sensors' data
+    # For simplicity, let's assume we have a function to refresh all sensors
+    # You need to implement this function based on your architecture
+    await hass.async_add_executor_job(refresh_all_sensors)
+
+def refresh_all_sensors():
+    """Placeholder function to refresh all lunar sensors."""
+    # Implement logic to refresh sensors here, if applicable
+    # This is a placeholder and needs to be replaced with actual logic
+    pass
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the Lunar Calendar component."""
+    hass.data.setdefault(DOMAIN, {})
+    return True
+
+PLATFORMS = [Platform.SENSOR]
