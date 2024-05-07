@@ -1,77 +1,44 @@
-import datetime
-import logging
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
-from homeassistant.const import CONF_NAME
-from homeassistant.helpers.entity import Entity
-from .lunar_calculator.Lunar import Lunar
-from .lunar_calculator.Holiday import Holiday
+# custom_components/custom_lunar/__init__.py
 
-async def async_setup(hass, config):
-    """Set up the Lunar Calendar component."""
-    async def handle_get_lunar_info(service):
-        """Handle the get lunar info service."""
-        now = datetime.datetime.now()
-        lunar = Lunar()
-        lunar_date = lunar.getLunar(now)
-        holiday = Holiday().getHoliday(now.year, now.month, now.day)
-        eight_char_string = str(lunar_date.getEightChar())
+import asyncio
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import Config, HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.entity_component import EntityComponent
+from .const import DOMAIN, PLATFORMS
+from .sensor import CustomLunarSensor
 
-        response_data = {
-            "LYear": lunar_date.getYearShengXiaoByLiChun(),
-            "LMonth": lunar_date.getMonthInChinese(),
-            "LDay": lunar_date.getDayInChinese(),
-            "TimeInGanZhi": lunar_date.getTimeInGanZhi(),
-            "Week": lunar_date.getWeekInChinese(),
-            "LJie": lunar_date.getOtherFestivals(),  # 其他节日
-            "TianGanYear": lunar_date.getYearInGanZhiExact(),
-            "TianGanMonth": lunar_date.getMonthInGanZhiExact(),
-            "TianGanDay": lunar_date.getDayInGanZhiExact(),
-            "DayLu": lunar_date.getDayLu(),
-            "JieQi": lunar_date.getPrevJieQi(True),  # 前一个节气
-            "Xiu": lunar_date.getXiu(),
-            "Animal": lunar_date.getAnimal(),
-            "XinLuck": lunar_date.getXiuLuck(),
-            "Zheng": lunar_date.getZheng(),
-            "Gong": lunar_date.getGong(),
-            "PengZuGan": lunar_date.getPengZuGan(),
-            "PengZuZhi": lunar_date.getPengZuZhi(),
-            "XiShen": lunar_date.getDayPositionXiDesc(),
-            "YangGui": lunar_date.getDayPositionYangGuiDesc(),
-            "YinGui": lunar_date.getDayPositionYinGuiDesc(),
-            "FuShen": lunar_date.getDayPositionFuDesc(),
-            "CaiShen": lunar_date.getDayPositionCaiDesc(),
-            "TaiShen": lunar_date.getDayPositionTai(),
-            "ChongSha": '冲' + lunar_date.getDayChongDesc() + ' 煞' + lunar_date.getDaySha(),
-            "WinXingNaYear": lunar_date.getYearNaYin(),
-            "WuxingNaMonth": lunar_date.getMonthNaYin(),
-            "WuxingNaDay": lunar_date.getDayNaYin(),
-            "WuXingZhiXing": lunar_date.getDayNaYin() + ' ' + lunar_date.getZhiXing(),
-            "BaZi": eight_char_string,
-            "Yi": lunar_date.getDayYi(),
-            "Ji": lunar_date.getDayJi(),
-            "JiShen": lunar_date.getDayJiShen(),
-            "XiongShen": lunar_date.getDayXiongSha(),
-            "YueXiang": lunar_date.getYueXiang(),
-            "HolidayUtil": {
-                "JiaQi": holiday
-            }
-        }
-
-        _LOGGER.info("Lunar info: %s", response_data)
-
-        # Call the service to send the data to Home Assistant
-        await hass.services.async_call("custom_lunar", "lunar_info_updated", response_data)
-
-    async def async_update_lunar_info_service(call):
-        """Update lunar info service."""
-        await handle_get_lunar_info(None)
-
-    # Register the service
-    hass.services.async_register(DOMAIN, "get_lunar_info", handle_get_lunar_info)
-
-    # Set up a recurring call to update lunar info
-    update_interval = datetime.timedelta(hours=1)
-    hass.helpers.event.async_track_time_interval(async_update_lunar_info_service, update_interval)
-
+async def async_setup(hass: HomeAssistant, config: Config):
+    """Set up the custom_lunar component."""
+    # Initialize the component even if no config entry is present
+    hass.data.setdefault(DOMAIN, {})
     return True
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Set up this integration using UI."""
+    # Ensure the component is set up
+    if not hass.data.get(DOMAIN):
+        await async_setup(hass, {})
+
+    component = EntityComponent(_LOGGER, DOMAIN, hass, SCAN_INTERVAL=None)
+    await component.async_setup_entry(entry)
+
+    # Setup the sensor platform
+    hass.async_create_task(async_setup_sensor_platform(hass, entry))
+    return True
+
+async def async_setup_sensor_platform(hass: HomeAssistant, entry: ConfigEntry):
+    """Set up the sensor platform."""
+    await asyncio.gather(
+        hass.config_entries.async_forward_entry_setup(entry, "sensor"),
+    )
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Unload a config entry."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        hass.data[DOMAIN].pop(entry.entry_id)
+    return unload_ok
+
+# The following line is important for Home Assistant to discover your platforms
+PLATFORMS = ["sensor"]
