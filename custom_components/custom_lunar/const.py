@@ -20,6 +20,10 @@ SERVICE_SCHEMA_REFRESH = vol.Schema({})
 # Icons
 ICON_CALENDAR = "mdi:calendar"
 
+# Configuration options
+CONF_SCAN_INTERVAL = "scan_interval"
+
+
 # Sensor attribute keys
 ATTR_WEEK = "week"
 ATTR_LUNAR_YEAR = "lunar_year"
@@ -29,3 +33,9 @@ ATTR_LUNAR_DAY = "lunar_day"
 
 # Additional constants as needed
 # ...
+
+# Platforms
+PLATFORMS = ["sensor"]
+
+# Services
+UPDATE_LUNAR_SERVICE = "update_lunar_data"
