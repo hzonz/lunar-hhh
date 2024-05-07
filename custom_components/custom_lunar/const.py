@@ -1,24 +1,31 @@
-# custom_components/custom_lunar/const.py
+"""
+Constants for the Lunar Calendar custom component.
+"""
 
-"""Constants for the Custom Lunar Calendar component."""
+import voluptuous as vol
+from datetime import timedelta
 
-# Component domain
-DOMAIN = "custom_lunar"
+# Component Domain
+DOMAIN = "lunar_calendar"
 
-# Configuration constants
-CONF_NAME = "lunar custom"  # 名称配置项，如果需要的话
-CONF_UPDATE_INTERVAL = "update_interval"  # 更新间隔配置项，单位秒
+# Default configuration options
+DEFAULT_SCAN_INTERVAL = timedelta(hours=1)  # 默认扫描间隔为1小时
+CONF_CUSTOM_NAME = "custom_name"  # 自定义组件名称配置项
+DEFAULT_CUSTOM_NAME = "农历日期"  # 自定义名称的默认值
 
-# Default values
-DEFAULT_NAME = "农历"
-DEFAULT_UPDATE_INTERVAL = 7200  # 默认每天更新一次，即24小时
+# Services
+SERVICE_REFRESH = "refresh_lunar_data"
+SERVICE_SCHEMA_REFRESH = vol.Schema({})
 
-# Platforms within the component
-PLATFORMS = ["sensor"]
+# Icons
+ICON_CALENDAR = "mdi:calendar"
 
-# Sensor specific constants
-SENSOR_TYPE_LUNAR_DATE = "lunar_date"
-SENSOR_ICON = "mdi:calendar"
+# Sensor attribute keys
+ATTR_WEEK = "week"
+ATTR_LUNAR_YEAR = "lunar_year"
+ATTR_LUNAR_MONTH = "lunar_month"
+ATTR_LUNAR_DAY = "lunar_day"
+# ... 其他属性键，根据需要添加
 
-# Miscellaneous constants
-SCAN_INTERVAL = DEFAULT_UPDATE_INTERVAL  # 传感器的刷新间隔，这里与默认更新间隔保持一致
+# Additional constants as needed
+# ...
