@@ -1,0 +1,16 @@
+{
+  "domain": "custom_lunar",
+  "name": "Custom Lunar Calendar",
+  "version": "1.0.0",
+  "config_flow": true,
+  "documentation": "https://github.com/hzonz/lunar-hhh/new/main/custom_components/README.md",
+  "issue_tracker": "https://github.com/hzonz/lunar-hhh/new/main/custom_components/issues",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": ["@hzonz"],
+  "iot_class": "local_polling",
+  "quality_scale": "internal",
+  "loggers": {
+    "custom_lunar": "DEBUG"
+  }
+}
