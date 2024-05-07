@@ -7,18 +7,6 @@ from homeassistant.helpers.entity import Entity
 from .lunar_calculator.Lunar import Lunar
 from .lunar_calculator.Holiday import Holiday
 
-_LOGGER = logging.getLogger(__name__)
-
-DOMAIN = "lunar"
-DEFAULT_NAME = "Lunar Calendar"
-
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Required(CONF_API_KEY): cv.string,
-        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-    }),
-}, extra=vol.ALLOW_EXTRA)
-
 async def async_setup(hass, config):
     """Set up the Lunar Calendar component."""
     async def handle_get_lunar_info(service):
@@ -27,6 +15,7 @@ async def async_setup(hass, config):
         lunar = Lunar()
         lunar_date = lunar.getLunar(now)
         holiday = Holiday().getHoliday(now.year, now.month, now.day)
+        eight_char_string = str(lunar_date.getEightChar())
 
         response_data = {
             "LYear": lunar_date.getYearShengXiaoByLiChun(),
@@ -58,7 +47,7 @@ async def async_setup(hass, config):
             "WuxingNaMonth": lunar_date.getMonthNaYin(),
             "WuxingNaDay": lunar_date.getDayNaYin(),
             "WuXingZhiXing": lunar_date.getDayNaYin() + ' ' + lunar_date.getZhiXing(),
-            "BaZi": eightCharString,
+            "BaZi": eight_char_string,
             "Yi": lunar_date.getDayYi(),
             "Ji": lunar_date.getDayJi(),
             "JiShen": lunar_date.getDayJiShen(),
@@ -86,5 +75,3 @@ async def async_setup(hass, config):
     hass.helpers.event.async_track_time_interval(async_update_lunar_info_service, update_interval)
 
     return True
-
-
