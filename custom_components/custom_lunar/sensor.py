@@ -1,76 +1,85 @@
-# custom_components/custom_lunar/sensor.py
-
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
-from .const import DOMAIN, CONF_NAME
-from .calculator import calculate_lunar_and_holiday_data  # 假设这是计算农历和节日数据的函数
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.restore_state import RestoreEntity
+from .const import DOMAIN, UPDATE_LUNAR_SERVICE
+from .calculator import LunarCalculator
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    """Set up the lunar sensor based on a config entry."""
-    name = entry.data.get(CONF_NAME)
-    async_add_entities([CustomLunarSensor(hass, entry, name)])
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
+    """Set up the Lunar Sensor based on a config entry."""
+    lunar_calculator = LunarCalculator()
+    lunar_data = lunar_calculator.get_current_lunar_info()
+    async_add_entities([LunarSensor(lunar_data)], True)
+    # 注册手动更新服务
+    hass.services.async_register(DOMAIN, UPDATE_LUNAR_SERVICE, async_update_lunar_sensor, schema=UPDATE_LUNAR_SERVICE_SCHEMA)
 
-class CustomLunarSensor(SensorEntity):
-    def __init__(self, hass, entry, name):
-        self.hass = hass
-        self._entry = entry
-        self._name = name
-        self._state = None
-        self._attributes = {}
+async def async_update_lunar_sensor(service: ServiceCall):
+    """Service to manually update the lunar sensor."""
+    entity_id = service.data.get('entity_id')
+    if entity_id:
+        entity = hass.states.get(entity_id)
+        if entity is not None and entity.domain == 'sensor':
+            # 这里需要根据实际情况调用实体的更新逻辑
+            # 由于我们还没有实现传感器的实体ID获取，这里仅示意
+            pass
 
-    @property
-    def unique_id(self):
-        """Return a unique ID to use for this entity."""
-        return f"{DOMAIN}_{self._entry.entry_id}_sensor"
+class LunarSensor(SensorEntity, RestoreEntity):
+    def __init__(self, lunar_data):
+        super().__init__()
+        self._attr_name = "Lunar Date"
+        self._attr_device_class = SensorDeviceClass.DATE  # 可选，根据需要设置设备类别
+        self._lunar_data = lunar_data
+        self._attr_native_value = lunar_data["Lunar"]
+        self._update_scheduled = False  # 用于跟踪是否已计划更新
 
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        return self._name
-
-    @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        # 假设calculate_lunar_and_holiday_data已提供完整的数据字典
-        if self._state is None:
-            self.update_lunar_data()
-        return self._state.get('Lunar', '')
-
-    @property
-    def icon(self):
-        """Return the icon to use in the frontend."""
-        return "mdi:calendar"
+    async def async_added_to_hass(self):
+        """Run when entity about to be added to Home Assistant."""
+        await super().async_added_to_hass()
+        # 每天自动更新一次
+        async_track_time_change(self.hass, self._update_daily, hour=0, minute=0, second=0)
 
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
-        if not self._attributes:
-            self.update_lunar_data()
-        return self._attributes
+        return {
+            "Week": self._lunar_data["Week"],
+            "NianGanZhi": self._lunar_data["NianGanZhi"],
+            "YueGanZhi": self._lunar_data["YueGanZhi"],
+            "RiGanZhi": self._lunar_data["RiGanZhi"],
+            "RiLu": self._lunar_data["RiLu"],
+            "JieQi": self._lunar_data["JieQi"],
+            "DongFangXingXiu": self._lunar_data["DongFangXingXiu"],
+            "PengZuGan": self._lunar_data["PengZuGan"],
+            "PengZuZhi": self._lunar_data["PengZuZhi"],
+            "XiShen": self._lunar_data["XiShen"],
+            "YangGui": self._lunar_data["YangGui"],
+            "YinGui": self._lunar_data["YinGui"],
+            "FuShen": self._lunar_data["FuShen"],
+            "CaiShen": self._lunar_data["CaiShen"],
+            "TaiShen": self._lunar_data["TaiShen"],
+            "ChongSha": self._lunar_data["ChongSha"],
+            "WuXingNaYin": self._lunar_data["WuXingNaYin"],
+            "WuXingRi": self._lunar_data["WuXingRi"],
+            "BaZi": self._lunar_data["BaZi"],
+            "Yi": self._lunar_data["Yi"],
+            "Ji": self._lunar_data["Ji"],
+            "JiShen": self._lunar_data["JiShen"],
+            "XiongShen": self._lunar_data["XiongShen"],
+            "YueXiang": self._lunar_data["YueXiang"],
+            "JiaQi": self._lunar_data["JiaQi"],
+            "ShiChen": self._lunar_data.get("ShiChen", "未知"),
+        }
 
-    def update_lunar_data(self):
-        """Fetch and update lunar and holiday data."""
-        calculated_data = calculate_lunar_and_holiday_data()  # 调用计算函数
-        if calculated_data:
-            self._state = calculated_data.get('Lunar', '')
-            # 移除 'Lunar' 项，因为它是传感器的 native_value
-            formatted_data = calculated_data.copy()
-            formatted_data.pop('Lunar', None)
-            self._attributes = formatted_data
+    async def _update_daily(self, now):
+        """Daily update at midnight."""
+        await self.async_update_ha_state(True)
 
     async def async_update(self):
         """Update the sensor."""
-        self.update_lunar_data()
-
-    @property
-    def device_info(self):
-        """Return device information about this entity."""
-        return DeviceInfo(identifiers={(DOMAIN, self.unique_id)}, name=self.name)
-
-
-    async def async_manual_update(self):
-    """Perform a manual update of the sensor's data."""
-    self.update_lunar_data()
-    self.async_write_ha_state()  # Notify Home Assistant of the state change
+        lunar_calculator = LunarCalculator()
+        new_lunar_data = lunar_calculator.get_current_lunar_info()
+        if new_lunar_data != self._lunar_data:
+            self._lunar_data = new_lunar_data
+            self.async_schedule_update_ha_state()
