@@ -1,18 +1,15 @@
 from __future__ import annotations
-
+import logging
 import voluptuous as vol
-
 from homeassistant import config_entries
-from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
-from .const import DOMAIN  # 引入你的组件域名
+from .const import DOMAIN, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
-# 定义配置流程的步骤
 STEP_USER_DATA_SCHEMA = vol.Schema({
-    vol.Optional(CONF_SCAN_INTERVAL, default="00:05:00"): cv.time_period_str,
+    vol.Optional(CONF_SCAN_INTERVAL, default=str(DEFAULT_SCAN_INTERVAL)): cv.time_period_str,
 })
 
 @callback
@@ -27,10 +24,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
+        _LOGGER.debug("Starting user step for Lunar Calendar config flow.")
         errors = {}
 
         if user_input is not None:
-            # 这里可以增加输入验证逻辑
+            _LOGGER.debug("User input received: %s", user_input)
             return self.async_create_entry(title="农历日历", data=user_input)
 
         return self.async_show_form(
@@ -46,12 +44,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         """Manage options."""
+        _LOGGER.debug("Starting options flow for Lunar Calendar config entry: %s", self.config_entry.entry_id)
         if user_input is not None:
+            _LOGGER.debug("User input for options: %s", user_input)
             return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({
-                vol.Optional(CONF_SCAN_INTERVAL, default=self.config_entry.options.get(CONF_SCAN_INTERVAL, "00:05:00")): cv.time_period_str,
+                vol.Optional(CONF_SCAN_INTERVAL, default=str(self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))): cv.time_period_str,
             }),
         )
