@@ -10,25 +10,4 @@
   "codeowners": ["@yourgithubusername"],
   "iot_class": "local_polling",
   "quality_scale": "internal",
-  
-  "services": {
-    "refresh_lunar_data": {
-      "description": "手动刷新农历数据。",
-      "fields": {}
-    }
-  },
-  
-  "platforms": [
-    {
-      "platform": "sensor",
-      "name": "农历日期",
-      "icon": "mdi:calendar-chinese",
-      "entities": [
-        {
-          "entity": "sensor.lunar_date",
-          "name": "农历日期"
-        }
-      ]
-    }
-  ]
 }
