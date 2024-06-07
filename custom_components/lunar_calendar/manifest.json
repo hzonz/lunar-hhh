@@ -9,5 +9,5 @@
   "requirements": [],
   "codeowners": ["@yourgithubusername"],
   "iot_class": "local_polling",
-  "quality_scale": "internal",
+  "quality_scale": "internal"
 }
